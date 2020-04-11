@@ -1,6 +1,5 @@
 """Implementation of the Node class for running distributed GHS Algorithm"""
 import sys
-import multiprocessing as mp
 from modules.utils import State, EdgeStatus, Edge, Message
 
 INF = sys.maxsize
