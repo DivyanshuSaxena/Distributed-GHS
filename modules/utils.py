@@ -28,11 +28,18 @@ class Message(enum.Enum):
 
 
 class Edge:
-    def __init__(self, edge_id, weight, queue):
+    def __init__(self, edge_id, node1, node2, weight, queue):
         self.weight = weight
         self.status = EdgeStatus.basic
         self.queue = queue
         self.id = edge_id
+        self.node1 = node1
+        self.node2 = node2
+
+    def __str__(self):
+        string = '(' + str(self.node1) + ', ' + str(self.node2) + ', ' + str(
+            self.weight) + ')'
+        return string
 
     def get_id(self):
         """Getter method for the id of the edge instance
@@ -66,7 +73,7 @@ class Edge:
         """
         self.status = status
 
-    def write(self, message, payload, sender=self.id):
+    def write(self, message, payload):
         """Write to the given edge by the node specified in the arguments
         
         Arguments:
@@ -75,5 +82,5 @@ class Edge:
             payload {List} -- List of arguments sent along with message
         """
         # Find the queue to write to
-        obj = {'id': sender, 'msg': message, 'pl': payload}
+        obj = {'sender': self.get_id(), 'message': message, 'pl': payload}
         queue.put(obj)

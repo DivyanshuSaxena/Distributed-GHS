@@ -24,11 +24,13 @@ class Node:
         self.edges = edges
         self.num_neighbors = len(edges)
 
-        # Temporary variables
+        # Process variables
         self.rec = 0
         self.test_edge = -1
         self.best_edge = -1
         self.best_weight = INF
+        self.completed = False
+        self.awake = False
 
     def __change_level(self, level):
         """Change level of current node
@@ -72,7 +74,10 @@ class Node:
                                      to be read
         """
         if edge_index == -1:
-            self.msg_q.write(message, payload, sender_edge)
+            # Write to its own queue
+            edge_id = self.edges[sender_edge].get_id()
+            obj = {'sender': edge_id, 'message': message, 'pl': payload}
+            self.msg_q.put(obj)
         else:
             self.edges[edge_index].write(message, payload)
 
@@ -120,6 +125,10 @@ class Node:
             self.__edge_stub(self.best_edge, Message.connect, [self.level])
             self.__change_edge_status(self.best_edge, EdgeStatus.branch)
 
+    def __complete(self):
+        """Set the variable for completion of the MST creation"""
+        self.completed = True
+
     def wakeup(self):
         """Wake up function"""
         # Find least weight edge from node
@@ -132,8 +141,9 @@ class Node:
 
         self.__change_level(0)
         self.__change_state(State.found)
-        self.rec = 0
         self.__change_edge_status(min_edge, EdgeStatus.branch)
+        self.rec = 0
+        self.awake = True
 
         # Send connect message to the least weight edge
         self.__edge_stub(min_edge, Message.connect, [self.level])
@@ -277,3 +287,51 @@ class Node:
     def process_changeroot(self):
         """Execute receipt of changeroot message"""
         self.__changeroot()
+
+    def start_operation(self):
+        """Start the operation for the Node"""
+        while True:
+            # If completed return
+            if self.completed:
+                break
+
+            # Read from the queue
+            obj = self.msg_q.get()
+            edge_id = obj['sender']
+            message = obj['message']
+            pl = obj['pl']
+            
+            # Find the edge index which sent this message
+            for _in in range(self.num_neighbors):
+                edge = self.edges[_in]
+                if edge.get_id() == edge_id:
+                    edge_index = _in
+                    break
+
+            # Process each message accordingly
+            if message == Message.connect:
+                # Wake process first before processing connect message
+                if not self.awake: self.wakeup()
+                self.process_connect(edge_index, pl[0])
+            elif message == Message.initiate:
+                self.procecss_initiate(edge_index, pl[0], pl[1], pl[2])
+            elif message == Message.test:
+                self.procecss_test(edge_index, pl[0], pl[1])
+            elif message == Message.accept:
+                self.process_accept(edge_index)
+            elif message == Message.reject:
+                self.process_reject(edge_index)
+            elif message == Message.report:
+                self.process_report(edge_index, pl[0])
+            elif message == Message.changeroot:
+                self.process_changeroot()
+        
+        return self.completed
+        
+    def return_parent(self):
+        """Return the parent of the current node instance. Return -1 if not
+        completed yet"""
+        # Return parent if completed
+        if self.completed:
+            return self.father
+        return -1
