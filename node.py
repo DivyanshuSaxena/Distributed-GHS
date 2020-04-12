@@ -18,7 +18,7 @@ def print_level(dl, node_id, string):
     if dl == 'basic':
         print('[NOTE ' + str(node_id) + ']: ' + string)
     if debug_level == 'info' and dl == 'info':
-            print('[INFO ' + str(node_id) + ']: ' + string)
+        print('[INFO ' + str(node_id) + ']: ' + string)
     if debug_level == 'debug':
         if dl == 'info':
             print('[INFO ' + str(node_id) + ']: ' + string)
@@ -157,6 +157,8 @@ class Node:
     def __complete(self):
         """Set the variable for completion of the MST creation"""
         # First propagate halt message to all neighbours
+        print_level('debug', self.node_id,
+                    'Sending halt to all branch neighbors')
         for _in in range(self.num_neighbors):
             edge = self.edges[_in]
             if edge.get_status() == EdgeStatus.branch:
@@ -198,8 +200,7 @@ class Node:
         else:
             if self.edges[edge_index].get_status() == EdgeStatus.basic:
                 # Send back to queue for processing
-                self.__edge_stub(-1, Message.connect, [level],
-                                 self.edges[edge_index].get_id())
+                self.__edge_stub(-1, Message.connect, [level], edge_index)
             else:
                 # Core Edge reached - send initiate to the connecting node
                 edge_weight = self.edges[edge_index].get_weight()
