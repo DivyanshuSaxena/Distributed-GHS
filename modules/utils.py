@@ -25,6 +25,7 @@ class Message(enum.Enum):
     reject = 5
     report = 6
     changeroot = 7
+    halt = 8
 
 
 class Edge:
@@ -89,3 +90,15 @@ class Edge:
         # Find the queue to write to
         obj = {'sender': self.get_id(), 'message': message, 'pl': payload}
         self.queue.put(obj)
+
+    def copy(self, another):
+        """Copy the status of another edge into current Edge instance
+        
+        Arguments:
+            another {Edge}
+        """
+        if self.id == another.get_id():
+            print ('Changing status')
+            self.status = another.get_status()
+        else:
+            print('Edge instances not compatible for copy')

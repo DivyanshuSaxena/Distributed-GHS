@@ -17,7 +17,9 @@ def print_level(dl, node_id, string):
     global debug_level
     if dl == 'basic':
         print('[NOTE ' + str(node_id) + ']: ' + string)
-    if dl == debug_level:
+    if debug_level == 'info' and dl == 'info':
+            print('[INFO ' + str(node_id) + ']: ' + string)
+    if debug_level == 'debug':
         if dl == 'info':
             print('[INFO ' + str(node_id) + ']: ' + string)
         elif dl == 'debug':
@@ -154,6 +156,11 @@ class Node:
 
     def __complete(self):
         """Set the variable for completion of the MST creation"""
+        # First propagate halt message to all neighbours
+        for _in in range(self.num_neighbors):
+            edge = self.edges[_in]
+            if edge.get_status() == EdgeStatus.branch:
+                self.__edge_stub(_in, Message.halt)
         self.completed = True
 
     def wakeup(self):
@@ -321,7 +328,11 @@ class Node:
         self.__changeroot()
 
     def start_operation(self):
-        """Start the operation for the Node"""
+        """Start the operation for the Node        
+        
+        Returns:
+            List -- List of edges of current node
+        """
         # # Prevent message streak (for debugging purposes)
         # msg_streak = 0
         # max_streak = 10
@@ -375,6 +386,8 @@ class Node:
                 self.process_report(edge_index, pl[0])
             elif message == Message.changeroot:
                 self.process_changeroot()
+            elif message == Message.halt:
+                self.__complete()
 
         print_level('basic', self.node_id, 'Completed for this node')
         return self.completed
