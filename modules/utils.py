@@ -37,6 +37,11 @@ class Edge:
         self.node2 = node2
 
     def __str__(self):
+        """Print the edge instance for the output
+        
+        Returns:
+            String -- Print edge
+        """
         string = '(' + str(self.node1) + ', ' + str(self.node2) + ', ' + str(
             self.weight) + ')'
         return string
@@ -49,7 +54,7 @@ class Edge:
         """
         return self.id
 
-    def weight(self):
+    def get_weight(self):
         """Getter method for the weight of the Edge class
         
         Returns:
@@ -57,7 +62,7 @@ class Edge:
         """
         return self.weight
 
-    def status(self):
+    def get_status(self):
         """Getter method for the status of the Edge class
         
         Returns:
@@ -83,4 +88,4 @@ class Edge:
         """
         # Find the queue to write to
         obj = {'sender': self.get_id(), 'message': message, 'pl': payload}
-        queue.put(obj)
+        self.queue.put(obj)

@@ -3,22 +3,44 @@ import sys
 from modules.utils import State, EdgeStatus, Edge, Message
 
 INF = sys.maxsize
+debug_level = 'basic'
+
+
+def print_level(dl, node_id, string):
+    """Print statements as per debug level
+    
+    Arguments:
+        dl {String} -- Debug Level - basic/info/debug
+        node_id {Integer} -- Node id for which statement is to be printed
+        string {String} -- Print statement
+    """
+    global debug_level
+    if dl == 'basic':
+        print('[NOTE ' + str(node_id) + ']: ' + string)
+    if dl == debug_level:
+        if dl == 'info':
+            print('[INFO ' + str(node_id) + ']: ' + string)
+        elif dl == 'debug':
+            print('[DEBUG ' + str(node_id) + ']: ' + string)
 
 
 class Node:
-    def __init__(self, edges, name, msg_q):
+    def __init__(self, node_id, edges, name, msg_q, dl):
         """Ctor for the Node class
         
         Arguments:
+            node_id {Integer} -- Node Id
             edges {List} -- List of queues for each edge to the current node
             name {Float} -- Fragment Name to which the Node belongs
             msg_q {Multiprocessing Queue} -- Queue from which Node will read
         """
+        global debug_level
         # Required for GHS operation
         self.state = State.sleep
         self.name = name
         self.msg_q = msg_q
         self.level = 0
+        self.node_id = node_id
 
         self.father = -1  # Index of the edge along the father of the node
         self.edges = edges
@@ -30,7 +52,7 @@ class Node:
         self.best_edge = -1
         self.best_weight = INF
         self.completed = False
-        self.awake = False
+        debug_level = dl
 
     def __change_level(self, level):
         """Change level of current node
@@ -56,13 +78,12 @@ class Node:
                                     changed
             status {EdgeStatus} -- Updated status of the edge
         """
+        if status == EdgeStatus.branch:
+            print_level('debug', self.node_id,
+                        'Edge ' + str(edge_index) + ' accepted.')
         self.edges[edge_index].change_status(status)
 
-    def __edge_stub(self,
-                    edge_index,
-                    message,
-                    payload=[],
-                    sender_edge=edge_index):
+    def __edge_stub(self, edge_index, message, payload=[], sender_edge=-1):
         """Act as a stub to write to the given edge
 
         Arguments:
@@ -71,14 +92,20 @@ class Node:
             message {Message} -- Message
             payload {List} -- Attached Payload
             sender_edge {Integer} -- Edge index through which the message is set
-                                     to be read
+                                     to be read, -1 if to be sent from current edge
         """
         if edge_index == -1:
             # Write to its own queue
             edge_id = self.edges[sender_edge].get_id()
             obj = {'sender': edge_id, 'message': message, 'pl': payload}
+            print_level(
+                'debug', self.node_id, 'Back to queue from ' +
+                str(sender_edge) + ' message ' + str(message))
             self.msg_q.put(obj)
         else:
+            print_level(
+                'debug', self.node_id,
+                'Sending to ' + str(edge_index) + ' message ' + str(message))
             self.edges[edge_index].write(message, payload)
 
     def __test(self):
@@ -87,10 +114,10 @@ class Node:
         min_wt = min_index = -1
         for _in in range(self.num_neighbors):
             edge = self.edges[_in]
-            if edge.status() == EdgeStatus.basic:
-                if min_wt == -1 or min_wt > edge.weight():
+            if edge.get_status() == EdgeStatus.basic:
+                if min_wt == -1 or min_wt > edge.get_weight():
                     min_index = _in
-                    min_wt = edge.weight()
+                    min_wt = edge.get_weight()
 
         if min_index != -1:
             # Send test message (to percolate the search)
@@ -103,7 +130,7 @@ class Node:
             self.__report()
 
     def __report(self):
-        """Execute  the report operation"""
+        """Execute the report operation"""
         # Count the number of sons in the current MST
         count = 0
         for _in in range(self.num_neighbors):
@@ -118,7 +145,7 @@ class Node:
 
     def __changeroot(self):
         """Execute the changeroot operation"""
-        if self.edges[self.best_edge].status() == EdgeStatus.branch:
+        if self.edges[self.best_edge].get_status() == EdgeStatus.branch:
             self.__edge_stub(self.best_edge, Message.changeroot)
         else:
             # changeroot received by father node
@@ -131,19 +158,19 @@ class Node:
 
     def wakeup(self):
         """Wake up function"""
+        print_level('basic', self.node_id, 'Wake up node')
         # Find least weight edge from node
         min_wt = min_edge = -1
         for _in in range(self.num_neighbors):
             edge = self.edges[_in]
-            if min_wt == -1 or min_wt > edge.weight():
+            if min_wt == -1 or min_wt > edge.get_weight():
                 min_edge = _in
-                min_wt = edge.weight()
+                min_wt = edge.get_weight()
 
         self.__change_level(0)
         self.__change_state(State.found)
         self.__change_edge_status(min_edge, EdgeStatus.branch)
         self.rec = 0
-        self.awake = True
 
         # Send connect message to the least weight edge
         self.__edge_stub(min_edge, Message.connect, [self.level])
@@ -162,17 +189,17 @@ class Node:
             _pl = [self.level, self.name, self.state]
             self.__edge_stub(edge_index, Message.initiate, _pl)
         else:
-            if self.edges[edge_index].status() == EdgeStatus.basic:
+            if self.edges[edge_index].get_status() == EdgeStatus.basic:
                 # Send back to queue for processing
                 self.__edge_stub(-1, Message.connect, [level],
-                                 self.edges[edge_index].id())
+                                 self.edges[edge_index].get_id())
             else:
                 # Core Edge reached - send initiate to the connecting node
-                edge_weight = self.edges[edge_index].weight()
+                edge_weight = self.edges[edge_index].get_weight()
                 _pl = [self.level + 1, edge_weight, State.find]
                 self.__edge_stub(edge_index, Message.initiate, _pl)
 
-    def procecss_initiate(self, edge_index, level, name, state):
+    def process_initiate(self, edge_index, level, name, state):
         """Execute receipt of initiate message
         
         Arguments:
@@ -195,16 +222,16 @@ class Node:
             if _in == edge_index: continue
             # Send initiate message to all children
             edge = self.edges[_in]
-            if edge.status() == EdgeStatus.branch:
+            if edge.get_status() == EdgeStatus.branch:
                 _pl = [level, name, state]
-                self.__edge_stub(_in, Message.test, _pl)
+                self.__edge_stub(_in, Message.initiate, _pl)
 
         # If state has been updated to test, start finding
         if self.state == State.find:
             self.rec = 0
             self.__test()
 
-    def procecss_test(self, edge_index, level, name):
+    def process_test(self, edge_index, level, name):
         """Execute receipt of test message
         
         Arguments:
@@ -215,12 +242,11 @@ class Node:
         """
         if level > self.level:
             # Send back to queue
-            self.__edge_stub(-1, Message.test, [level, name],
-                             self.edges[edge_index].id())
+            self.__edge_stub(-1, Message.test, [level, name], edge_index)
         else:
             # Check whether testing node is not internal
             if name == self.name:
-                if self.edges[edge_index].status() == EdgeStatus.basic:
+                if self.edges[edge_index].get_status() == EdgeStatus.basic:
                     self.__change_edge_status(edge_index, EdgeStatus.reject)
                 # Send reject if not already sent to the node for testing
                 if edge_index != self.test_edge:
@@ -238,7 +264,7 @@ class Node:
                                     received in the edges list
         """
         self.test_edge = -1
-        edge_weight = self.edges[edge_index].weight()
+        edge_weight = self.edges[edge_index].get_weight()
         if edge_weight < self.best_weight:
             self.best_weight = edge_weight
             self.best_edge = edge_index
@@ -253,7 +279,9 @@ class Node:
             edge_index {Integer} -- Index of the edge on which message was
                                     received in the edges list
         """
-        if self.edges[edge_index].status() == EdgeStatus.basic:
+        if self.edges[edge_index].get_status() == EdgeStatus.basic:
+            print_level('debug', self.node_id,
+                        'Edge ' + str(edge_index) + ' rejected.')
             self.__change_edge_status(edge_index, EdgeStatus.reject)
         self.__test()
 
@@ -265,12 +293,16 @@ class Node:
                                     received in the edges list
             weight {Float} -- Best weight found by the child at edge_index
         """
+        print_level(
+            'debug', self.node_id, 'Received report from edge ' +
+            str(edge_index) + ' with weight ' + str(weight))
         if edge_index != self.father:
             # Send back the reply for the initiate search message
             if weight < self.best_weight:
                 self.best_weight = weight
                 self.best_edge = edge_index
             self.rec += 1
+            self.__report()
         else:
             # Received report from core edge - finish the search for best edge
             if self.state == State.find:
@@ -290,6 +322,10 @@ class Node:
 
     def start_operation(self):
         """Start the operation for the Node"""
+        # # Prevent message streak (for debugging purposes)
+        # msg_streak = 0
+        # max_streak = 10
+        # msg = Message.connect
         while True:
             # If completed return
             if self.completed:
@@ -300,7 +336,11 @@ class Node:
             edge_id = obj['sender']
             message = obj['message']
             pl = obj['pl']
-            
+
+            # Wake process first before processing any message
+            if self.state == State.sleep:
+                self.wakeup()
+
             # Find the edge index which sent this message
             for _in in range(self.num_neighbors):
                 edge = self.edges[_in]
@@ -308,15 +348,25 @@ class Node:
                     edge_index = _in
                     break
 
+            # # Check message streak
+            # if message == msg:
+            #     msg_streak += 1
+            # else:
+            #     msg = message
+            #     msg_streak = 0
+            # if msg_streak == max_streak:
+            #     break
+
             # Process each message accordingly
+            print_level(
+                'info', self.node_id,
+                'Received from edge ' + str(edge_index) + ' ' + str(message))
             if message == Message.connect:
-                # Wake process first before processing connect message
-                if not self.awake: self.wakeup()
                 self.process_connect(edge_index, pl[0])
             elif message == Message.initiate:
-                self.procecss_initiate(edge_index, pl[0], pl[1], pl[2])
+                self.process_initiate(edge_index, pl[0], pl[1], pl[2])
             elif message == Message.test:
-                self.procecss_test(edge_index, pl[0], pl[1])
+                self.process_test(edge_index, pl[0], pl[1])
             elif message == Message.accept:
                 self.process_accept(edge_index)
             elif message == Message.reject:
@@ -325,9 +375,10 @@ class Node:
                 self.process_report(edge_index, pl[0])
             elif message == Message.changeroot:
                 self.process_changeroot()
-        
+
+        print_level('basic', self.node_id, 'Completed for this node')
         return self.completed
-        
+
     def return_parent(self):
         """Return the parent of the current node instance. Return -1 if not
         completed yet"""

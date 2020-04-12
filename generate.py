@@ -2,7 +2,7 @@
 import sys
 import random
 
-num_nodes = sys.argv[1]
+num_nodes = int(sys.argv[1])
 nodes = list(range(num_nodes))  # List of all nodes
 added = [0]  # List of nodes added in the connected graph
 
@@ -18,6 +18,9 @@ for node in nodes[1:]:
         edges.append((node, end, weight))
         temp.remove(end)
         weight += 1
+
+    # Add the current node in the graph too
+    added.append(node)
 
 # Write into input file
 with open('files/inp.txt', 'w') as file:

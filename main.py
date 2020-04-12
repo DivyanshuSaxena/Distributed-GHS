@@ -7,10 +7,11 @@ from multiprocessing import Process, Queue, Lock
 wake_count = 0
 input_file = sys.argv[1]
 output_file = sys.argv[2]
-wake_processes = sys.argv[3]
+wake_processes = int(sys.argv[3])
+debug_level = sys.argv[4]
 
 
-def spawn_process(edges, name, msg_q, l):
+def spawn_process(node_id, edges, name, msg_q, l):
     """Spawn a new process for node with given name and adjacent edges
     
     Arguments:
@@ -22,7 +23,8 @@ def spawn_process(edges, name, msg_q, l):
     Returns:
         Bool -- Whether the MST was completed or not
     """
-    node = Node(edges, name, msg_q)
+    global wake_count, wake_processes, debug_level
+    node = Node(node_id, edges, name, msg_q, debug_level)
 
     # Wake up certain processes.
     l.acquire()
@@ -35,6 +37,7 @@ def spawn_process(edges, name, msg_q, l):
 
     completed = node.start_operation()
 
+
 # Read from the input file
 with open(input_file) as file:
     contents = file.readlines()
@@ -43,7 +46,7 @@ contents = [x.strip() for x in contents]
 num_nodes = int(contents[0])
 raw_edges = []
 for line in contents[1:]:
-    line = line[1:-1].split()
+    line = line[1:-1].split(',')
     raw_edges.append(line)
 
 # Attach a queue for each process
@@ -83,11 +86,11 @@ outfile = open(output_file, 'w')
 mst = []  # Store the edge_ids
 for node_edges in edges:
     for edge in node_edges:
-        if edge.status() == EdgeStatus.branch:
+        if edge.get_status() == EdgeStatus.branch:
             edge_id = edge.get_id()
             if edge_id not in mst:
                 outfile.write(str(edge) + '\n')
                 mst.append(edge_id)
 
 assert len(mst) == num_nodes - 1
-print ('[SUCCESS]: Completed Execution')
+print('[SUCCESS]: Completed Execution')
