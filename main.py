@@ -10,6 +10,26 @@ wake_processes = int(sys.argv[3])
 debug_level = sys.argv[4]
 
 
+def print_output(outfile, raw_edges, mst):
+    tree_edges = []
+    for _in in range(len(mst)):
+        in_mst = mst[_in]
+        if in_mst:
+            tree_edges.append(raw_edges[_in])
+
+    # Sort the tree edges according to their weights
+    tree_edges.sort(key=lambda x: float(x[2]))
+    for edge in tree_edges:
+        node1 = int(edge[0])
+        node2 = int(edge[1])
+        if node1 < node2:
+            outfile.write('(' + str(node1) + ', ' + str(node2) + ', ' +
+                          str(edge[2].strip()) + ')\n')
+        else:
+            outfile.write('(' + str(node2) + ', ' + str(node1) + ', ' +
+                          str(edge[2].strip()) + ')\n')
+
+
 def spawn_process(node_id, name, msg_q, wake_count, mst):
     """Spawn a new process for node with given name and adjacent edges
     
@@ -23,7 +43,7 @@ def spawn_process(node_id, name, msg_q, wake_count, mst):
     Returns:
         Bool -- Whether the MST was completed or not
     """
-    global wake_processes, debug_level, outfile, edges
+    global wake_processes, debug_level, edges
     node = Node(node_id, edges[node_id], name, msg_q, debug_level)
 
     # Wake up certain processes.
@@ -41,7 +61,6 @@ def spawn_process(node_id, name, msg_q, wake_count, mst):
             # Check and update mst in a critical section
             with mst.get_lock():
                 if not mst[edge_id]:
-                    outfile.write(str(edge) + '\n')
                     mst[edge_id] = True
 
 
@@ -53,8 +72,11 @@ contents = [x.strip() for x in contents]
 num_nodes = int(contents[0])
 raw_edges = []
 for line in contents[1:]:
-    line = line[1:-1].split(',')
-    raw_edges.append(line)
+    if len(line) > 1:
+        line = line[1:-1].split(',')
+        raw_edges.append(line)
+    else:
+        break
 
 # Attach a queue for each process
 queues = []
@@ -94,5 +116,6 @@ for p in processes:
     p.join()
 
 mst = list(mst)
+print_output(outfile, raw_edges, mst)
 assert mst.count(1) == num_nodes - 1
 print('[SUCCESS]: Completed Execution')
