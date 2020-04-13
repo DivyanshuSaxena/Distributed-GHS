@@ -19,5 +19,7 @@ for i in $(seq 1 $NUMTIMES); do
         cp logs/temp.log logs/inp-$4-info.log
         break
     fi
+    tail -5 logs/temp.log
+    truncate -s 0 logs/temp.log
     echo "Completed run "$i
 done
