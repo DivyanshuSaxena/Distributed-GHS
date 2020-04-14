@@ -163,11 +163,12 @@ class Node:
             edge = self.edges[_in]
             if edge.get_status() == EdgeStatus.branch:
                 self.__edge_stub(_in, Message.halt)
+        self.msg_q.close()       
         self.completed = True
 
     def wakeup(self):
         """Wake up function"""
-        print_level('basic', self.node_id, 'Wake up node')
+        print_level('info', self.node_id, 'Wake up node')
         # Find least weight edge from node
         min_wt = min_edge = -1
         for _in in range(self.num_neighbors):
@@ -390,7 +391,7 @@ class Node:
             elif message == Message.halt:
                 self.__complete()
 
-        print_level('basic', self.node_id, 'Completed for this node')
+        print_level('info', self.node_id, 'Completed for this node')
         return self.completed
 
     def return_parent(self):

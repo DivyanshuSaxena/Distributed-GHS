@@ -118,8 +118,35 @@ def generate_linear(num_nodes):
 
     write_to_file(num_nodes, edges)
 
+def generate_ring(num_nodes):
+    """Generate a ring graph with unique edge weights
+    
+    Arguments:
+        num_nodes {Integer}
+    """
+    edges = []
+    weights = list(range(5, (num_nodes * num_nodes) // 2))
+    nodes = list(range(num_nodes))
+    random.shuffle(weights)
+    random.shuffle(nodes)
+    for _in in range(num_nodes - 1):
+        weight = random.choice(weights)
+        edges.append((nodes[_in], nodes[_in + 1], weight))
+        weights.remove(weight)
+
+    # Add the final edge
+    weight = random.choice(weights)
+    edges.append((nodes[-1], nodes[0], weight))
+
+    write_to_file(num_nodes, edges)
+
 
 if __name__ == '__main__':
+    if len(sys.argv) != 3:
+        print('To run the file: python generate.py <num-nodes-to-generate> ' +
+              '<graph-type (tree/connected/linear/random/ring)>')
+        sys.exit()
+
     num_nodes = int(sys.argv[1])
     gen_type = sys.argv[2]
     print(gen_type)
@@ -129,5 +156,7 @@ if __name__ == '__main__':
         generate_tree(num_nodes)
     elif gen_type == 'connected':
         generate_connected(num_nodes)
+    elif gen_type == 'ring':
+        generate_ring(num_nodes)
     else:
         generate_random(num_nodes)

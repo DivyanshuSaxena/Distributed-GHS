@@ -72,6 +72,10 @@ class Kruskals:
 
 
 if __name__ == '__main__':
+    if len(sys.argv) < 2:
+        print('To run the file: python kruskals.py <input-file>')
+        sys.exit()
+
     # Read from the input file
     input_file = sys.argv[1]
 

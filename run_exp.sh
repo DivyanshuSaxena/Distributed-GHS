@@ -2,24 +2,24 @@
 # Arguments:
 # 1: Number of times python script should be run
 # 2: Input file
-# 3: Output file
-# 4: Number of nodes
-# 5: Timeout
+# 3: Number of nodes
+# 4: Timeout
 
 NUMTIMES=$1
 
 for i in $(seq 1 $NUMTIMES); do
-    exec python main.py $2 $3 1 info >logs/temp.log &
+    exec python main.py 10 basic $2 >logs/temp.log &
     PID=$!
-    sleep $5
+    sleep $4
     if ps -p $PID >/dev/null; then
         echo "$PID is running"
         # kill the process
         kill -SIGINT $PID
-        cp logs/temp.log logs/inp-$4-info.log
+        cp logs/temp.log logs/inp-$3-basic.log
         break
     fi
     tail -5 logs/temp.log
     truncate -s 0 logs/temp.log
+    kill -9 $PID
     echo "Completed run "$i
 done
