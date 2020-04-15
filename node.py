@@ -55,6 +55,7 @@ class Node:
         self.best_edge = -1
         self.best_weight = INF
         self.completed = False
+        self.num_messages = 0
         debug_level = dl
 
     def __change_level(self, level):
@@ -109,6 +110,7 @@ class Node:
             print_level(
                 'debug', self.node_id,
                 'Sending to ' + str(edge_index) + ' message ' + str(message))
+            self.num_messages += 1
             self.edges[edge_index].write(message, payload)
 
     def __test(self):
@@ -393,8 +395,9 @@ class Node:
             elif message == Message.halt:
                 self.__complete()
 
+        # Return the number of messages sent by this node
         print_level('info', self.node_id, 'Completed for this node')
-        return self.completed
+        return self.num_messages
 
     def return_parent(self):
         """Return the parent of the current node instance. Return -1 if not

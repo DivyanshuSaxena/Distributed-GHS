@@ -1,4 +1,5 @@
 """Main file for spawning processes and running experiments"""
+import os
 import sys
 from node import Node
 from modules.utils import Edge, EdgeStatus
@@ -49,7 +50,7 @@ def print_output(raw_edges, mst):
     return tree_weight
 
 
-def spawn_process(node_id, name, msg_q, wake_count, mst):
+def spawn_process(node_id, name, msg_q, wake_count, total_messages, mst):
     """Spawn a new process for node with given name and adjacent edges
     
     Arguments:
@@ -57,6 +58,7 @@ def spawn_process(node_id, name, msg_q, wake_count, mst):
         name {Float} -- Fragment Name, initially zero for all
         msg_q {Multiprocessing Queue} -- Queue for the node
         wake_count {Multiprocessing Value} -- Shared value of wake count
+        total_messages {Multiprocessing Value} -- Shared total messages value
         mst {Multiprocessing Array} -- List of edge indexes
     
     Returns:
@@ -72,7 +74,9 @@ def spawn_process(node_id, name, msg_q, wake_count, mst):
             wake_count.value += 1
             node.wakeup()
 
-    completed = node.start_operation()
+    node_messages = node.start_operation()
+    with total_messages.get_lock():
+        total_messages.value += node_messages
 
     for edge in edges[node_id]:
         if edge.get_status() == EdgeStatus.branch:
@@ -128,11 +132,13 @@ for raw_edge in raw_edges:
 
 # Spawn processes for each node
 wake_count = Value('i', 0)
+total_messages = Value('i', 0)
 mst = Array('b', [False] * (edge_id + 1))
 processes = []
 for node_id in range(num_nodes):
     p = Process(target=spawn_process,
-                args=(node_id, 0, queues[node_id], wake_count, mst))
+                args=(node_id, 0, queues[node_id], wake_count, total_messages,
+                      mst))
     processes.append(p)
     p.start()
 
@@ -150,3 +156,14 @@ k_weight = k.get_mst(raw_edges)
 
 assert weight == k_weight, '[CHECK]: Weights from Kruskals and GHS do not match'
 # print('[SUCCESS]: Completed Execution. MST Weight: ' + str(weight))
+
+# Write to file for plotting graph
+script_dir = sys.path[0]
+results_dir = script_dir + '/files'
+if not os.path.exists(results_dir):
+    os.makedirs(results_dir)
+
+with open(results_dir + '/results.txt', 'a') as f:
+    f.write(
+        str(input_file) + ', ' + str(total_messages.value) + ', ' +
+        str(num_nodes) + ', ' + str(len(raw_edges)) + '\n')

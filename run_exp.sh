@@ -8,7 +8,7 @@
 NUMTIMES=$1
 
 for i in $(seq 1 $NUMTIMES); do
-    exec python main.py 10 basic $2 >logs/temp.log &
+    exec python main.py 1 basic $2 >logs/temp.log &
     PID=$!
     sleep $4
     if ps -p $PID >/dev/null; then

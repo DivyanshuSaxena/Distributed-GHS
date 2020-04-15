@@ -3,15 +3,17 @@ import sys
 import random
 
 
-def write_to_file(num_nodes, edges):
+def write_to_file(num_nodes, edges, graph_type):
     """Write the edges on the input file
     
     Arguments:
         num_nodes {Integer} -- Number of nodes in the graph
         edges {List} -- List of edges with unique edges
+        graph_type {String} -- Mention in the file name
     """
     # Write into input file
-    with open('files/inp.txt', 'w') as file:
+    filename = 'files/inp-' + str(num_nodes) + '-' + graph_type + '.txt'
+    with open(filename, 'w') as file:
         file.write(str(num_nodes) + '\n')
         for edge in edges:
             file.write(str(edge) + '\n')
@@ -45,7 +47,7 @@ def generate_random(num_nodes):
         # Add the current node in the graph too
         added.append(node)
 
-    write_to_file(num_nodes, edges)
+    write_to_file(num_nodes, edges, 'random')
 
 
 def generate_connected(num_nodes):
@@ -63,7 +65,7 @@ def generate_connected(num_nodes):
             edges.append((_in, _jn, weight))
             weights.remove(weight)
 
-    write_to_file(num_nodes, edges)
+    write_to_file(num_nodes, edges, 'connected')
 
 
 def generate_tree(num_nodes):
@@ -97,7 +99,7 @@ def generate_tree(num_nodes):
         if flag:
             break
 
-    write_to_file(num_nodes, edges)
+    write_to_file(num_nodes, edges, 'tree')
 
 
 def generate_linear(num_nodes):
@@ -116,7 +118,7 @@ def generate_linear(num_nodes):
         edges.append((nodes[_in], nodes[_in + 1], weight))
         weights.remove(weight)
 
-    write_to_file(num_nodes, edges)
+    write_to_file(num_nodes, edges, 'linear')
 
 def generate_ring(num_nodes):
     """Generate a ring graph with unique edge weights
@@ -138,7 +140,7 @@ def generate_ring(num_nodes):
     weight = random.choice(weights)
     edges.append((nodes[-1], nodes[0], weight))
 
-    write_to_file(num_nodes, edges)
+    write_to_file(num_nodes, edges, 'ring')
 
 
 if __name__ == '__main__':
