@@ -1,5 +1,6 @@
 """Implementation of the Node class for running distributed GHS Algorithm"""
 import sys
+import time
 from modules.utils import State, EdgeStatus, Edge, Message
 
 INF = sys.maxsize
@@ -335,10 +336,10 @@ class Node:
         Returns:
             List -- List of edges of current node
         """
-        # # Prevent message streak (for debugging purposes)
-        # msg_streak = 0
-        # max_streak = 10
-        # msg = Message.connect
+        # Prevent message streak (for debugging purposes)
+        msg_streak = 0
+        max_streak = 10
+        msg = Message.connect
         while True:
             # If completed return
             if self.completed:
@@ -361,14 +362,15 @@ class Node:
                     edge_index = _in
                     break
 
-            # # Check message streak
-            # if message == msg:
-            #     msg_streak += 1
-            # else:
-            #     msg = message
-            #     msg_streak = 0
-            # if msg_streak == max_streak:
-            #     break
+            # Check message streak
+            if message == msg:
+                msg_streak += 1
+            else:
+                msg = message
+                msg_streak = 0
+            if msg_streak >= max_streak:
+                msg_streak = 0
+                time.sleep(0.01)
 
             # Process each message accordingly
             print_level(
