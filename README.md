@@ -1,6 +1,8 @@
 # Distributed-GHS
 Repository to hold the implementation for computing the Minimum Spanning Tree using GHS Algorithm in a distributed fashion, as part of assignment for course [COL819 - Spring 2020](http://www.cse.iitd.ac.in/~srsarangi/courses/2020/col_819_2020/index.html) at IIT Delhi.
 
+GHS Algorithm [paper](https://dl.acm.org/doi/10.1145/357195.357200)
+
 ## Repository Structure
 .  
 ├── generate.py  
