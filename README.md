@@ -21,8 +21,8 @@ For further details, check the docstring in each of the python files.
 ## Experiments
 ### How to run
 
-```bash
-python main.py <processes-to-wake-up> <debug-level> <path-to-input-file>
+```console
+>>> python main.py <processes-to-wake-up> <debug-level> <path-to-input-file>
 ```
 
 #### Parameters
@@ -32,8 +32,8 @@ The parameters are as follows:
 * Input File - This is the path of the input file, which contains description of the graph.  
 
 ### Test Case Generation
-```bash
-python generate.py <num-nodes-to-generate> <graph-type>
+```console
+>>> python generate.py <num-nodes-to-generate> <graph-type>
 ```
 
 #### Parameters
@@ -42,8 +42,8 @@ python generate.py <num-nodes-to-generate> <graph-type>
 
 ### Running Multiple Experiments
 The repo also comes bundled with a shell script to run multiple runs of the script and to log the output, in case any error occurs:
-```bash
-./run_exp.sh <num-times-to-execute> <input-file> <number-of-nodes> <timeout-in-seconds>
+```console
+>>> ./run_exp.sh <num-times-to-execute> <input-file> <number-of-nodes> <timeout-in-seconds>
 ```
 
 ## Implementation
