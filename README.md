@@ -4,17 +4,18 @@ Repository to hold the implementation for computing the Minimum Spanning Tree us
 GHS Algorithm [paper](https://dl.acm.org/doi/10.1145/357195.357200)
 
 ## Repository Structure
+```
 .  
 ├── generate.py  
 ├── main.py  
 ├── modules  
-│   ├── __ init__.py  
 │   ├── kruskals.py  
 │   ├── plot.py  
 │   └── utils.py  
 ├── node.py  
 ├── README.md  
 └── run_exp.sh  
+```
 
 For further details, check the docstring in each of the python files.
 
